@@ -28,6 +28,8 @@ services:
   frontend:
     image: ghcr.io/${GITHUB_REPOSITORY}/frontend:latest
     container_name: mechboard-frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8111}:80"
     networks:
       - web
       - mechboard-internal
