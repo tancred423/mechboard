@@ -1,32 +1,97 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useEncountersStore } from "@/stores/encounters";
 import { useSettingsStore } from "@/stores/settings";
+import { useAuthStore } from "@/stores/auth";
+import { getActiveSyncSession, getSyncWebSocketUrl } from "@/api";
 import MechCard from "@/components/MechCard.vue";
 
 const route = useRoute();
 const router = useRouter();
 const encountersStore = useEncountersStore();
 const settingsStore = useSettingsStore();
+const authStore = useAuthStore();
 
 const loading = ref(true);
 const saving = ref(false);
 const copied = ref(false);
 
+const syncSessionId = ref<string | null>(null);
+let syncSocket: WebSocket | null = null;
+
 const encounterId = computed(() => route.params.id as string);
 
 onMounted(async () => {
-  await encountersStore.fetchEncounters();
+  if (authStore.loading) {
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(
+        () => authStore.loading,
+        (isLoading) => {
+          if (!isLoading) {
+            unwatch();
+            resolve();
+          }
+        },
+        { immediate: true },
+      );
+    });
+  }
+
+  if (encountersStore.encounters.length === 0) {
+    await encountersStore.fetchEncounters();
+  }
+
   const encounter = encountersStore.encounters.find(
     (e) => e.id === encounterId.value,
   );
   if (encounter) {
     encountersStore.setCurrentEncounter(encounter);
+    await checkAndConnectSync();
   } else {
     router.replace("/");
   }
   loading.value = false;
+});
+
+async function checkAndConnectSync() {
+  if (!authStore.isAuthenticated) return;
+
+  try {
+    const existingSession = await getActiveSyncSession(encounterId.value);
+    if (existingSession) {
+      syncSessionId.value = existingSession.sessionId;
+      connectSyncSocket();
+    }
+  } catch {}
+}
+
+function connectSyncSocket() {
+  if (!syncSessionId.value) return;
+
+  const wsUrl = getSyncWebSocketUrl(syncSessionId.value, true);
+  syncSocket = new WebSocket(wsUrl);
+}
+
+function sendSyncUpdate() {
+  if (
+    syncSocket?.readyState === WebSocket.OPEN &&
+    encountersStore.currentEncounter
+  ) {
+    syncSocket.send(
+      JSON.stringify({
+        type: "update",
+        state: encountersStore.currentEncounter.config,
+      }),
+    );
+  }
+}
+
+onUnmounted(() => {
+  if (syncSocket) {
+    syncSocket.close();
+    syncSocket = null;
+  }
 });
 
 watch(
@@ -43,6 +108,9 @@ async function handleSave() {
   saving.value = true;
   try {
     await encountersStore.saveCurrentEncounter();
+    if (syncSessionId.value) {
+      sendSyncUpdate();
+    }
     router.push(`/encounter/${encounterId.value}`);
   } finally {
     saving.value = false;

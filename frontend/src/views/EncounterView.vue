@@ -33,7 +33,25 @@ let syncSocket: WebSocket | null = null;
 const encounterId = computed(() => route.params.id as string);
 
 onMounted(async () => {
-  await encountersStore.fetchEncounters();
+  if (authStore.loading) {
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(
+        () => authStore.loading,
+        (isLoading) => {
+          if (!isLoading) {
+            unwatch();
+            resolve();
+          }
+        },
+        { immediate: true },
+      );
+    });
+  }
+
+  if (encountersStore.encounters.length === 0) {
+    await encountersStore.fetchEncounters();
+  }
+
   const encounter = encountersStore.encounters.find(
     (e) => e.id === encounterId.value,
   );
