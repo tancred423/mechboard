@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- Outer board -->
+  <rect
+    x="64"
+    y="96"
+    width="384"
+    height="320"
+    rx="72"
+    fill="#141414"
+    stroke="#ddd"
+    stroke-width="16"
+  />
+
+  <!-- Left pill (inactive) -->
+  <rect
+    x="112"
+    y="208"
+    width="136"
+    height="96"
+    rx="32"
+    fill="#555"
+    stroke="#999"
+    stroke-width="10"
+  />
+
+  <!-- Right pill (active) -->
+  <rect
+    x="264"
+    y="208"
+    width="136"
+    height="96"
+    rx="32"
+    fill="#4db87a"
+    stroke="#6bcb8f"
+    stroke-width="10"
+  />
+
+  <!-- Subtle top divider / UI hint -->
+  <path
+    d="M132 156H380"
+    stroke="#2A2A2A"
+    stroke-width="12"
+    stroke-linecap="round"
+    opacity="0.6"
+  />
+</svg>

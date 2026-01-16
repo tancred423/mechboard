@@ -1,0 +1,27 @@
+{
+  "tasks": {
+    "dev": "deno run --watch --allow-net --allow-env --allow-read --allow-ffi src/main.ts",
+    "start": "deno run --allow-net --allow-env --allow-read --allow-ffi src/main.ts",
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "deno run --allow-net --allow-env --allow-read --allow-ffi src/migrate.ts"
+  },
+  "imports": {
+    "@oak/oak": "jsr:@oak/oak@^17",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225",
+    "djwt": "https://deno.land/x/djwt@v3.0.2/mod.ts",
+    "drizzle-orm": "npm:drizzle-orm@^0.36",
+    "drizzle-orm/mysql-core": "npm:drizzle-orm@^0.36/mysql-core",
+    "drizzle-orm/mysql2": "npm:drizzle-orm@^0.36/mysql2",
+    "drizzle-orm/mysql2/migrator": "npm:drizzle-orm@^0.36/mysql2/migrator",
+    "mysql2/promise": "npm:mysql2@^3.11/promise"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  },
+  "fmt": {
+    "lineWidth": 120
+  },
+  "nodeModulesDir": "auto"
+}

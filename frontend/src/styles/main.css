@@ -1,0 +1,204 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  --font-sans: "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1), 0 6px 10px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(77, 184, 122, 0.3);
+}
+
+[data-theme="light"] {
+  --bg-primary: #faf9f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f3f0;
+  --bg-elevated: #ffffff;
+
+  --text-primary: #1a1817;
+  --text-secondary: #5c5754;
+  --text-tertiary: #8a8582;
+  --text-inverse: #faf9f7;
+
+  --border-subtle: #e8e5e1;
+  --border-default: #d4d0cb;
+  --border-strong: #b8b3ad;
+
+  --accent-primary: #4db87a;
+  --accent-primary-hover: #3ea86c;
+  --accent-secondary: #58a7f0;
+  --accent-success: #5cb872;
+  --accent-warning: #f5a623;
+  --accent-info: #5a9bd4;
+
+  --option-unselected-bg: #f0eeeb;
+  --option-unselected-border: #d4d0cb;
+  --option-selected-bg: #4db87a;
+  --option-selected-border: #3ea86c;
+  --option-selected-text: #ffffff;
+
+  --card-bg: #ffffff;
+  --card-border: #e8e5e1;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f0e0d;
+  --bg-secondary: #1a1918;
+  --bg-tertiary: #242221;
+  --bg-elevated: #1f1e1c;
+
+  --text-primary: #f5f3f0;
+  --text-secondary: #a8a4a0;
+  --text-tertiary: #6b6864;
+  --text-inverse: #0f0e0d;
+
+  --border-subtle: #2d2b29;
+  --border-default: #3d3a37;
+  --border-strong: #524e4a;
+
+  --accent-primary: #429266;
+  --accent-primary-hover: #316b4b;
+  --accent-secondary: #6cbdff;
+  --accent-success: #6bcb77;
+  --accent-warning: #f7b955;
+  --accent-info: #6ca8e0;
+
+  --option-unselected-bg: #242221;
+  --option-unselected-border: #3d3a37;
+  --option-selected-bg: #5ed493;
+  --option-selected-border: #78e0a8;
+  --option-selected-text: #0f0e0d;
+
+  --card-bg: #1a1918;
+  --card-border: #2d2b29;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-primary-hover);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(77, 184, 122, 0.15);
+}
+
+::selection {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+[data-view="default"] {
+  --option-min-height: 80px;
+  --option-padding: 1rem 0.75rem;
+  --option-font-size: 1rem;
+  --card-padding: 1.25rem;
+  --card-gap: 1.5rem;
+  --card-title-size: 1.125rem;
+}
+
+[data-view="compact"] {
+  --option-min-height: 60px;
+  --option-padding: 0.625rem 0.5rem;
+  --option-font-size: 0.875rem;
+  --card-padding: 0.875rem;
+  --card-gap: 1rem;
+  --card-title-size: 1rem;
+}

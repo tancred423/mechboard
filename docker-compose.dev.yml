@@ -1,0 +1,83 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: mechboard-db-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-mechboard}
+      MYSQL_USER: ${DB_USER:-mechboard}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-mechboard_dev}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mechboard_db_dev:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: mechboard-phpmyadmin-dev
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    ports:
+      - "${PHPMYADMIN_PORT:-8080}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mechboard-api-dev
+    environment:
+      PORT: ${PORT:-8000}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-mechboard}
+      DB_PASSWORD: ${DB_PASSWORD:-mechboard_dev}
+      DB_NAME: ${DB_NAME:-mechboard}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-not-for-production}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-http://localhost:8000/api/auth/discord/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    ports:
+      - "${PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/drizzle:/app/drizzle:ro
+      - ./backend/deno.json:/app/deno.json:ro
+    command: deno task dev
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: mechboard-frontend-dev
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+    ports:
+      - "${FRONTEND_DEV_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mechboard_db_dev:
