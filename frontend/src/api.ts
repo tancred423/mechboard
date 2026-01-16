@@ -168,9 +168,7 @@ export async function getActiveSyncEncounterIds(): Promise<string[]> {
   return handleResponse<string[]>(response);
 }
 
-export async function getActiveSyncSession(
-  encounterId: string,
-): Promise<{
+export async function getActiveSyncSession(encounterId: string): Promise<{
   sessionId: string;
   shareUrl: string;
   state: EncounterConfig;
