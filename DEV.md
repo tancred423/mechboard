@@ -19,18 +19,13 @@
 
 4. Start the development environment:
    ```bash
-   docker compose -f docker-compose.dev.yml up -d
+   ./dev.sh up
    ```
 
 5. Access the services:
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8000
    - phpMyAdmin: http://localhost:8080
-
-6. Run database migrations:
-   ```bash
-   docker exec -it mechboard-api-dev deno task db:migrate
-   ```
 
 ### Dev Commands
 
