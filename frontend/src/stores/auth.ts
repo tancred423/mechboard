@@ -17,6 +17,15 @@ export const useAuthStore = defineStore("auth", () => {
       loading.value = true;
       try {
         user.value = await getMe();
+        const encountersStore = useEncountersStore();
+        const migratedCount =
+          await encountersStore.migrateLocalEncountersToAccount();
+        if (migratedCount > 0) {
+          console.log(
+            `Migrated ${migratedCount} local encounter(s) to account`,
+          );
+        }
+        await encountersStore.fetchEncounters();
       } catch {
         logout();
       } finally {

@@ -424,6 +424,32 @@ export const useEncountersStore = defineStore("encounters", () => {
     fetchEncounters();
   }
 
+  async function migrateLocalEncountersToAccount(): Promise<number> {
+    const localEncounters = loadLocalEncounters();
+    if (localEncounters.length === 0) return 0;
+
+    let migratedCount = 0;
+    for (const encounter of localEncounters) {
+      try {
+        await api.createEncounter(
+          encounter.name,
+          encounter.description,
+          encounter.config,
+        );
+        migratedCount++;
+      } catch (e) {
+        console.error("Failed to migrate encounter:", encounter.name, e);
+      }
+    }
+
+    if (migratedCount > 0) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(LOCAL_FOLDERS_KEY);
+    }
+
+    return migratedCount;
+  }
+
   return {
     encounters,
     folders,
@@ -458,5 +484,6 @@ export const useEncountersStore = defineStore("encounters", () => {
     exportToJson,
     importFromJson,
     clearAndReload,
+    migrateLocalEncountersToAccount,
   };
 });
