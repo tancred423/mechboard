@@ -87,8 +87,12 @@ export const useEncountersStore = defineStore("encounters", () => {
         encounters.value = loadLocalEncounters();
         folders.value = loadLocalFolders();
       } else {
-        encounters.value = await api.getEncounters();
-        folders.value = loadLocalFolders();
+        const [serverEncounters, serverFolders] = await Promise.all([
+          api.getEncounters(),
+          api.getFolders(),
+        ]);
+        encounters.value = serverEncounters;
+        folders.value = serverFolders;
       }
     } catch (e) {
       error.value =
@@ -129,6 +133,15 @@ export const useEncountersStore = defineStore("encounters", () => {
       const newEncounter = await api.createEncounter(name, description, config);
       newEncounter.folderId = folderId;
       newEncounter.sortOrder = maxSortOrder + 1;
+      if (folderId || maxSortOrder >= 0) {
+        await api.reorderEncounters([
+          {
+            id: newEncounter.id,
+            folderId: folderId || null,
+            sortOrder: maxSortOrder + 1,
+          },
+        ]);
+      }
       encounters.value.push(newEncounter);
       return newEncounter;
     }
@@ -158,7 +171,6 @@ export const useEncountersStore = defineStore("encounters", () => {
         encounters.value[index] = {
           ...encounters.value[index],
           ...updated,
-          ...data,
         };
       }
       if (currentEncounter.value?.id === id) {
@@ -180,92 +192,169 @@ export const useEncountersStore = defineStore("encounters", () => {
     }
   }
 
-  function createFolder(name: string): Folder {
+  async function createFolder(name: string): Promise<Folder> {
     const maxSortOrder = folders.value.reduce(
       (max, f) => Math.max(max, f.sortOrder),
       -1,
     );
-    const newFolder: Folder = {
-      id: generateId(),
-      name,
-      sortOrder: maxSortOrder + 1,
-      collapsed: false,
-      createdAt: new Date().toISOString(),
-    };
-    folders.value.push(newFolder);
-    saveLocalFolders(folders.value);
-    return newFolder;
-  }
 
-  function updateFolder(id: string, data: Partial<Folder>): void {
-    const folder = folders.value.find((f) => f.id === id);
-    if (folder) {
-      Object.assign(folder, data);
+    if (isLocalMode.value) {
+      const newFolder: Folder = {
+        id: generateId(),
+        name,
+        sortOrder: maxSortOrder + 1,
+        collapsed: false,
+        createdAt: new Date().toISOString(),
+      };
+      folders.value.push(newFolder);
       saveLocalFolders(folders.value);
+      return newFolder;
+    } else {
+      const newFolder = await api.createFolder(name, maxSortOrder + 1);
+      folders.value.push(newFolder);
+      return newFolder;
     }
   }
 
-  function deleteFolder(id: string): void {
-    encounters.value.forEach((e) => {
-      if (e.folderId === id) {
-        e.folderId = undefined;
+  async function updateFolder(
+    id: string,
+    data: Partial<Folder>,
+  ): Promise<void> {
+    if (isLocalMode.value) {
+      const folder = folders.value.find((f) => f.id === id);
+      if (folder) {
+        Object.assign(folder, data);
+        saveLocalFolders(folders.value);
       }
-    });
-    saveLocalEncounters(encounters.value);
-
-    folders.value = folders.value.filter((f) => f.id !== id);
-    saveLocalFolders(folders.value);
-  }
-
-  function toggleFolderCollapsed(id: string): void {
-    const folder = folders.value.find((f) => f.id === id);
-    if (folder) {
-      folder.collapsed = !folder.collapsed;
-      saveLocalFolders(folders.value);
+    } else {
+      const updated = await api.updateFolder(id, data);
+      const index = folders.value.findIndex((f) => f.id === id);
+      if (index !== -1) {
+        folders.value[index] = updated;
+      }
     }
   }
 
-  function moveEncounterToFolder(
+  async function deleteFolder(id: string): Promise<void> {
+    if (isLocalMode.value) {
+      encounters.value.forEach((e) => {
+        if (e.folderId === id) {
+          e.folderId = undefined;
+        }
+      });
+      saveLocalEncounters(encounters.value);
+      folders.value = folders.value.filter((f) => f.id !== id);
+      saveLocalFolders(folders.value);
+    } else {
+      await api.deleteFolder(id);
+      encounters.value.forEach((e) => {
+        if (e.folderId === id) {
+          e.folderId = undefined;
+        }
+      });
+      folders.value = folders.value.filter((f) => f.id !== id);
+    }
+  }
+
+  async function toggleFolderCollapsed(id: string): Promise<void> {
+    const folder = folders.value.find((f) => f.id === id);
+    if (folder) {
+      const newCollapsed = !folder.collapsed;
+      folder.collapsed = newCollapsed;
+      if (isLocalMode.value) {
+        saveLocalFolders(folders.value);
+      } else {
+        await api.updateFolder(id, { collapsed: newCollapsed });
+      }
+    }
+  }
+
+  async function moveEncounterToFolder(
     encounterId: string,
     folderId: string | undefined,
-  ): void {
+  ): Promise<void> {
     const encounter = encounters.value.find((e) => e.id === encounterId);
     if (encounter) {
-      encounter.folderId = folderId;
       const targetEncounters = encounters.value.filter(
         (e) => e.folderId === folderId,
       );
-      encounter.sortOrder =
-        targetEncounters.reduce((max, e) => Math.max(max, e.sortOrder), -1) + 1;
-      saveLocalEncounters(encounters.value);
+      const maxSortOrder = targetEncounters.reduce(
+        (max, e) => Math.max(max, e.sortOrder),
+        -1,
+      );
+      encounter.folderId = folderId;
+      encounter.sortOrder = maxSortOrder + 1;
+
+      if (isLocalMode.value) {
+        saveLocalEncounters(encounters.value);
+      } else {
+        await api.reorderEncounters([
+          {
+            id: encounterId,
+            folderId: folderId || null,
+            sortOrder: maxSortOrder + 1,
+          },
+        ]);
+      }
     }
   }
 
-  function reorderEncounters(newOrder: Encounter[], folderId?: string): void {
+  async function reorderEncounters(
+    newOrder: Encounter[],
+    folderId?: string,
+  ): Promise<void> {
+    const updates: {
+      id: string;
+      sortOrder: number;
+      folderId: string | null;
+    }[] = [];
     newOrder.forEach((encounter, index) => {
       const e = encounters.value.find((x) => x.id === encounter.id);
       if (e) {
         e.sortOrder = index;
         e.folderId = folderId;
+        updates.push({
+          id: e.id,
+          sortOrder: index,
+          folderId: folderId || null,
+        });
       }
     });
-    saveLocalEncounters(encounters.value);
+
+    if (isLocalMode.value) {
+      saveLocalEncounters(encounters.value);
+    } else {
+      await api.reorderEncounters(updates);
+    }
   }
 
-  function reorderFolders(newOrder: Folder[]): void {
+  async function reorderFolders(newOrder: Folder[]): Promise<void> {
+    const updates: { id: string; sortOrder: number }[] = [];
     newOrder.forEach((folder, index) => {
       const f = folders.value.find((x) => x.id === folder.id);
       if (f) {
         f.sortOrder = index;
+        updates.push({ id: f.id, sortOrder: index });
       }
     });
-    saveLocalFolders(folders.value);
+
+    if (isLocalMode.value) {
+      saveLocalFolders(folders.value);
+    } else {
+      await api.reorderFolders(updates);
+    }
   }
 
   function setCurrentEncounter(encounter: Encounter | null) {
     currentEncounter.value = encounter
       ? { ...encounter, config: JSON.parse(JSON.stringify(encounter.config)) }
       : null;
+  }
+
+  function applySyncState(state: EncounterConfig) {
+    if (currentEncounter.value) {
+      currentEncounter.value.config = JSON.parse(JSON.stringify(state));
+    }
   }
 
   function addCard(name: string, selectionMode: "single" | "multi" = "single") {
@@ -390,27 +479,37 @@ export const useEncountersStore = defineStore("encounters", () => {
     });
   }
 
-  function importFromJson(json: string): Encounter | null {
+  async function importFromJson(json: string): Promise<Encounter | null> {
     try {
       const data = JSON.parse(json);
       if (data.name && data.config && Array.isArray(data.config.cards)) {
         const maxSortOrder = encounters.value
           .filter((e) => !e.folderId)
           .reduce((max, e) => Math.max(max, e.sortOrder), -1);
-        const newEncounter: Encounter = {
-          id: generateId(),
-          name: data.name,
-          description: data.description,
-          config: data.config,
-          sortOrder: maxSortOrder + 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        encounters.value.push(newEncounter);
+
         if (isLocalMode.value) {
+          const newEncounter: Encounter = {
+            id: generateId(),
+            name: data.name,
+            description: data.description,
+            config: data.config,
+            sortOrder: maxSortOrder + 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          encounters.value.push(newEncounter);
           saveLocalEncounters(encounters.value);
+          return newEncounter;
+        } else {
+          const newEncounter = await api.createEncounter(
+            data.name,
+            data.description,
+            data.config,
+          );
+          newEncounter.sortOrder = maxSortOrder + 1;
+          encounters.value.push(newEncounter);
+          return newEncounter;
         }
-        return newEncounter;
       }
     } catch {
       return null;
@@ -420,29 +519,55 @@ export const useEncountersStore = defineStore("encounters", () => {
 
   function clearAndReload() {
     encounters.value = [];
+    folders.value = [];
     currentEncounter.value = null;
     fetchEncounters();
   }
 
   async function migrateLocalEncountersToAccount(): Promise<number> {
     const localEncounters = loadLocalEncounters();
-    if (localEncounters.length === 0) return 0;
+    const localFolders = loadLocalFolders();
 
+    if (localEncounters.length === 0 && localFolders.length === 0) return 0;
+
+    const folderIdMap: Record<string, string> = {};
     let migratedCount = 0;
+
+    for (const folder of localFolders) {
+      try {
+        const newFolder = await api.createFolder(folder.name, folder.sortOrder);
+        folderIdMap[folder.id] = newFolder.id;
+      } catch (e) {
+        console.error("Failed to migrate folder:", folder.name, e);
+      }
+    }
+
     for (const encounter of localEncounters) {
       try {
-        await api.createEncounter(
+        const newEncounter = await api.createEncounter(
           encounter.name,
           encounter.description,
           encounter.config,
         );
+        const newFolderId = encounter.folderId
+          ? folderIdMap[encounter.folderId]
+          : null;
+        if (newFolderId || encounter.sortOrder !== 0) {
+          await api.reorderEncounters([
+            {
+              id: newEncounter.id,
+              folderId: newFolderId,
+              sortOrder: encounter.sortOrder,
+            },
+          ]);
+        }
         migratedCount++;
       } catch (e) {
         console.error("Failed to migrate encounter:", encounter.name, e);
       }
     }
 
-    if (migratedCount > 0) {
+    if (migratedCount > 0 || Object.keys(folderIdMap).length > 0) {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       localStorage.removeItem(LOCAL_FOLDERS_KEY);
     }
@@ -472,6 +597,7 @@ export const useEncountersStore = defineStore("encounters", () => {
     reorderEncounters,
     reorderFolders,
     setCurrentEncounter,
+    applySyncState,
     addCard,
     updateCard,
     deleteCard,

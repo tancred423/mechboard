@@ -20,7 +20,6 @@ export interface Encounter {
   name: string;
   description?: string;
   config: EncounterConfig;
-  shareCode?: string;
   folderId?: string;
   sortOrder: number;
   createdAt: string;

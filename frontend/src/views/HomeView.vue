@@ -132,9 +132,9 @@ function selectPreset(presetId: string) {
   }
 }
 
-function createFolder() {
+async function createFolder() {
   if (!newFolderName.value.trim()) return;
-  encountersStore.createFolder(newFolderName.value.trim());
+  await encountersStore.createFolder(newFolderName.value.trim());
   showFolderModal.value = false;
   newFolderName.value = "";
 }
@@ -144,9 +144,9 @@ function startEditFolder(folder: Folder) {
   editingFolderName.value = folder.name;
 }
 
-function saveEditFolder() {
+async function saveEditFolder() {
   if (editingFolderId.value && editingFolderName.value.trim()) {
-    encountersStore.updateFolder(editingFolderId.value, {
+    await encountersStore.updateFolder(editingFolderId.value, {
       name: editingFolderName.value.trim(),
     });
   }
@@ -163,7 +163,9 @@ async function handleImport() {
   importError.value = "";
 
   if (importJson.value.trim()) {
-    const result = encountersStore.importFromJson(importJson.value.trim());
+    const result = await encountersStore.importFromJson(
+      importJson.value.trim(),
+    );
     if (result) {
       showImportModal.value = false;
       importJson.value = "";
@@ -180,8 +182,8 @@ async function deleteEncounter(id: string) {
   confirmDelete.value = null;
 }
 
-function deleteFolder(id: string) {
-  encountersStore.deleteFolder(id);
+async function deleteFolder(id: string) {
+  await encountersStore.deleteFolder(id);
   confirmDeleteFolder.value = null;
 }
 
@@ -203,7 +205,7 @@ function onDragEnd() {
           {{
             authStore.isAuthenticated
               ? "Your encounters are synced to your account"
-              : "Stored locally in your browser. Login to sync across devices."
+              : "Stored locally in your browser. Login to sync across devices. Your locally stored encounters will be migrated to your account once you login."
           }}
         </p>
       </div>
