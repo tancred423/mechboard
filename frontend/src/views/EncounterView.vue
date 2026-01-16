@@ -343,9 +343,7 @@ onUnmounted(() => {
 
               <div class="viewers-count">
                 <span class="viewers-dot"></span>
-                {{ syncViewers }} viewer{{
-                  syncViewers !== 1 ? "s" : ""
-                }}
+                {{ syncViewers }} viewer{{ syncViewers !== 1 ? "s" : "" }}
                 connected
               </div>
 
