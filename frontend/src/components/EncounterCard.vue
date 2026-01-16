@@ -76,6 +76,8 @@ function exportEncounter() {
 
 <style scoped>
 .encounter-card {
+  display: flex;
+  flex-direction: column;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
@@ -89,6 +91,7 @@ function exportEncounter() {
 }
 
 .card-link {
+  flex: 1;
   display: block;
   padding: 1.25rem;
   color: inherit;
