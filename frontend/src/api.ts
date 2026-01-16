@@ -1,9 +1,10 @@
 import type {
   Encounter,
   EncounterConfig,
-  User,
+  Folder,
   Preset,
   SyncSession,
+  User,
 } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -15,9 +16,9 @@ function getAuthHeader(): Record<string, string> {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ error: "Unknown error" }));
+    const error = await response.json().catch(() => ({
+      error: "Unknown error",
+    }));
     throw new Error(error.error || `HTTP ${response.status}`);
   }
   if (response.status === 204) {
@@ -35,6 +36,65 @@ export async function getMe(): Promise<User> {
 
 export function getDiscordLoginUrl(): string {
   return `${API_URL}/auth/discord`;
+}
+
+export async function getFolders(): Promise<Folder[]> {
+  const response = await fetch(`${API_URL}/folders`, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse<Folder[]>(response);
+}
+
+export async function createFolder(
+  name: string,
+  sortOrder?: number,
+): Promise<Folder> {
+  const response = await fetch(`${API_URL}/folders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ name, sortOrder }),
+  });
+  return handleResponse<Folder>(response);
+}
+
+export async function updateFolder(
+  id: string,
+  data: { name?: string; sortOrder?: number; collapsed?: boolean },
+): Promise<Folder> {
+  const response = await fetch(`${API_URL}/folders/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Folder>(response);
+}
+
+export async function deleteFolder(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/folders/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeader(),
+  });
+  return handleResponse<void>(response);
+}
+
+export async function reorderFolders(
+  folders: { id: string; sortOrder: number }[],
+): Promise<void> {
+  const response = await fetch(`${API_URL}/folders/reorder`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ folders }),
+  });
+  return handleResponse<void>(response);
 }
 
 export async function getEncounters(): Promise<Encounter[]> {
@@ -90,25 +150,18 @@ export async function deleteEncounter(id: string): Promise<void> {
   return handleResponse<void>(response);
 }
 
-export async function getSharedEncounter(
-  code: string,
-): Promise<{ name: string; description?: string; config: EncounterConfig }> {
-  const response = await fetch(`${API_URL}/share/${code}`);
-  return handleResponse<{
-    name: string;
-    description?: string;
-    config: EncounterConfig;
-  }>(response);
-}
-
-export async function regenerateShareCode(
-  id: string,
-): Promise<{ shareCode: string }> {
-  const response = await fetch(`${API_URL}/encounters/${id}/regenerate-code`, {
-    method: "POST",
-    headers: getAuthHeader(),
+export async function reorderEncounters(
+  encounters: { id: string; sortOrder?: number; folderId?: string | null }[],
+): Promise<void> {
+  const response = await fetch(`${API_URL}/encounters/reorder`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ encounters }),
   });
-  return handleResponse<{ shareCode: string }>(response);
+  return handleResponse<void>(response);
 }
 
 export async function getPresets(): Promise<Preset[]> {

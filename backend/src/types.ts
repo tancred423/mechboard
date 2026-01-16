@@ -11,7 +11,7 @@ export interface CardConfig {
   options: OptionConfig[];
 }
 
-export interface SetupConfig {
+export interface EncounterConfig {
   id: string;
   name: string;
   description?: string;
@@ -28,13 +28,14 @@ export interface User {
   createdAt: string;
 }
 
-export interface StoredSetup {
+export interface StoredEncounter {
   id: string;
   userId: string;
+  folderId?: string;
   name: string;
   description?: string;
   config: string;
-  shareCode?: string;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
