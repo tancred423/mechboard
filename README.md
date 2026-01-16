@@ -1,8 +1,8 @@
 # MechBoard
 
-![MechBoard Screenshot](screenshot.png)
+![MechBoard Screenshot](https://github.com/user-attachments/assets/d5e03a83-0f72-4a97-b63a-6a52c959065c)
 
-MechBoard is a mechanic tracking tool designed primarily for Final Fantasy XIV raiders, though it can be adapted for any situation where you need to quickly remember and track multiple options during time-sensitive moments.
+MechBoard is a mechanic tracking tool designed primarily for Final Fantasy XIV raiders, though it can be adapted for any situation where you need to quickly remember and track multiple options during time-sensitive moments. It is fully customizable so you can build your own encounters, mechanics and their options. It comes with a sync feature so other people can follow along what options you select, so you can remember mechanics that affect the whole group.
 
 ## What It Does
 
