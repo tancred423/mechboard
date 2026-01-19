@@ -27,7 +27,7 @@ export function validateEncounterConfig(config: unknown): boolean {
       if (typeof optObj.id !== "string") return false;
       if (typeof optObj.name !== "string") return false;
       if (optObj.name.length > 50) return false;
-      if (typeof optObj.selected !== "boolean") return false;
+      if (optObj.selected !== undefined && typeof optObj.selected !== "boolean") return false;
     }
   }
 

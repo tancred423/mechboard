@@ -109,7 +109,15 @@ export const useEncountersStore = defineStore("encounters", () => {
     folderId?: string,
   ): Promise<Encounter> {
     const config: EncounterConfig = presetConfig
-      ? JSON.parse(JSON.stringify(presetConfig))
+      ? {
+          cards: presetConfig.cards.map((card) => ({
+            ...card,
+            options: card.options.map((option) => ({
+              ...option,
+              selected: false,
+            })),
+          })),
+        }
       : { cards: [] };
     const maxSortOrder = encounters.value
       .filter((e) => e.folderId === folderId)
