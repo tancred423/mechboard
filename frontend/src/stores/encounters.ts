@@ -472,10 +472,21 @@ export const useEncountersStore = defineStore("encounters", () => {
 
   function exportToJson(): string {
     if (!currentEncounter.value) return "";
+    const configWithoutSelections = {
+      cards: currentEncounter.value.config.cards.map((card) => ({
+        id: card.id,
+        name: card.name,
+        selectionMode: card.selectionMode,
+        options: card.options.map((option) => ({
+          id: option.id,
+          name: option.name,
+        })),
+      })),
+    };
     return JSON.stringify({
       name: currentEncounter.value.name,
       description: currentEncounter.value.description,
-      config: currentEncounter.value.config,
+      config: configWithoutSelections,
     });
   }
 
@@ -483,6 +494,18 @@ export const useEncountersStore = defineStore("encounters", () => {
     try {
       const data = JSON.parse(json);
       if (data.name && data.config && Array.isArray(data.config.cards)) {
+        const config: EncounterConfig = {
+          cards: data.config.cards.map((card: CardConfig) => ({
+            id: card.id || generateId(),
+            name: card.name,
+            selectionMode: card.selectionMode,
+            options: card.options.map((option: OptionConfig) => ({
+              id: option.id || generateId(),
+              name: option.name,
+              selected: false,
+            })),
+          })),
+        };
         const maxSortOrder = encounters.value
           .filter((e) => !e.folderId)
           .reduce((max, e) => Math.max(max, e.sortOrder), -1);
@@ -492,7 +515,7 @@ export const useEncountersStore = defineStore("encounters", () => {
             id: generateId(),
             name: data.name,
             description: data.description,
-            config: data.config,
+            config,
             sortOrder: maxSortOrder + 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -504,7 +527,7 @@ export const useEncountersStore = defineStore("encounters", () => {
           const newEncounter = await api.createEncounter(
             data.name,
             data.description,
-            data.config,
+            config,
           );
           newEncounter.sortOrder = maxSortOrder + 1;
           encounters.value.push(newEncounter);
