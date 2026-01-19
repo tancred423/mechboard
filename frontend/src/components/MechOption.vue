@@ -51,7 +51,6 @@ function cancelEdit() {
       :disabled="readonly"
     >
       <span class="option-name">{{ option.name }}</span>
-      <span v-if="option.selected" class="selected-indicator"></span>
     </button>
 
     <div v-else class="edit-container">
@@ -116,29 +115,6 @@ function cancelEdit() {
   border-color: var(--option-selected-border);
   color: var(--option-selected-text);
   box-shadow: var(--shadow-glow);
-}
-
-.option-btn.selected .selected-indicator {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 12px;
-  height: 12px;
-  background: var(--option-selected-text);
-  border-radius: 50%;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(0.85);
-  }
 }
 
 .option-btn.edit-mode {
