@@ -16,6 +16,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
     networks:
+      - web
       - mysql-network
       - mechboard-internal
     restart: unless-stopped
